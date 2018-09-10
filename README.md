@@ -23,7 +23,7 @@ func (f foo) CacheMiss() ([]byte, error){
 }
 
 func main() {
-	// construct a new cache
+	// construct a new cache (in this case, we're setting a 1-min TTL)
 	c, err := cache.NewCache("foo", time.Minute)
 	if err != nil {
 		fmt.Println(err)
