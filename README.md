@@ -3,7 +3,7 @@
 A local cache based on Badger.
 
 ### Sample Usage
-```
+```go
 package main
 
 import (
