@@ -14,6 +14,7 @@ import (
 )
 
 // implement the interface
+// the interface defines what we do when we have a cache miss
 type foo struct {}
 
 // the CacheMiss() function must return a byte array. This is the value that gets cached
