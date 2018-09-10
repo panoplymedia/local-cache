@@ -7,7 +7,7 @@ import (
 )
 
 type LocalCache interface {
-	CacheMiss() ([]byte, error)
+	CacheMiss(key string) ([]byte, error)
 }
 
 type cache struct {
@@ -40,7 +40,7 @@ func (c *cache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 		// key either does not exist or was expired
 		if err2 == badger.ErrKeyNotFound {
 			// pull the new value
-			dat, err3 := l.CacheMiss()
+			dat, err3 := l.CacheMiss(string(k))
 			if err3 != nil {
 				return err3
 			}
