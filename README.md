@@ -17,6 +17,7 @@ import (
 type foo struct {}
 
 // the CacheMiss() function must return a byte array. This is the value that gets cached
+// In a typical use-case, this would be a call to a db or some other external call you want to cache
 func (f foo) CacheMiss() ([]byte, error){
 	return []byte("abc"), nil
 }
