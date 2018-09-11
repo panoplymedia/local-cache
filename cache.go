@@ -10,30 +10,30 @@ type LocalCache interface {
 	CacheMiss(key string) ([]byte, error)
 }
 
-type cache struct {
+type BadgerCache struct {
 	name string
 	db   *badger.DB
 	TTL  time.Duration
 }
 
-func NewCache(n string, t time.Duration) (*cache, error) {
+func NewCache(n string, t time.Duration) (*BadgerCache, error) {
 	opts := badger.DefaultOptions
 	opts.Dir = n
 	opts.ValueDir = n
 	db, err := badger.Open(opts)
 	if err != nil {
-		return &cache{}, err
+		return &BadgerCache{}, err
 	}
 
-	c := cache{n, db, t}
+	c := BadgerCache{n, db, t}
 	return &c, nil
 }
 
-func (c *cache) Close() error {
+func (c *BadgerCache) Close() error {
 	return c.db.Close()
 }
 
-func (c *cache) Fetch(k []byte, l LocalCache) ([]byte, error) {
+func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 	var ret []byte
 	err := c.db.Update(func(txn *badger.Txn) error {
 		item, err2 := txn.Get(k)
@@ -68,4 +68,14 @@ func (c *cache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 	}
 
 	return ret, nil
+}
+
+func (c *BadgerCache) Set(k, v []byte) error {
+	return c.db.Update(func(txn *badger.Txn) error {
+		err2 := txn.SetWithTTL(k, v, c.TTL)
+		if err2 != nil {
+			return err2
+		}
+		return nil
+	})
 }
