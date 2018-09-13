@@ -11,9 +11,10 @@ type LocalCache interface {
 }
 
 type BadgerCache struct {
-	name string
-	db   *badger.DB
-	TTL  time.Duration
+	name   string
+	db     *badger.DB
+	TTL    time.Duration
+	ticker *time.Ticker // for GC loop
 }
 
 func NewCache(n string, t time.Duration) (*BadgerCache, error) {
@@ -25,11 +26,24 @@ func NewCache(n string, t time.Duration) (*BadgerCache, error) {
 		return &BadgerCache{}, err
 	}
 
-	c := BadgerCache{n, db, t}
+	// start a GC loop
+	ticker := time.NewTicker(30 * time.Minute)
+	go func(t *time.Ticker, d *badger.DB) {
+		for range t.C {
+		again:
+			err := d.RunValueLogGC(0.7)
+			if err == nil {
+				goto again
+			}
+		}
+	}(ticker, db)
+
+	c := BadgerCache{n, db, t, ticker}
 	return &c, nil
 }
 
 func (c *BadgerCache) Close() error {
+	c.ticker.Stop()
 	return c.db.Close()
 }
 
@@ -72,9 +86,21 @@ func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 
 func (c *BadgerCache) Set(k, v []byte) error {
 	return c.db.Update(func(txn *badger.Txn) error {
-		err2 := txn.SetWithTTL(k, v, c.TTL)
-		if err2 != nil {
-			return err2
+		err := txn.SetWithTTL(k, v, c.TTL)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (c *BadgerCache) SetBatch(k, v [][]byte) error {
+	return c.db.Update(func(txn *badger.Txn) error {
+		for i, _ := range k {
+			err := txn.SetWithTTL(k[i], v[i], c.TTL)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
