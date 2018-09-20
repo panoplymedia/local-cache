@@ -48,30 +48,34 @@ func (c *BadgerCache) Close() error {
 }
 
 func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
+	return c.FetchWithTTL(k, l, c.TTL)
+}
+
+func (c *BadgerCache) FetchWithTTL(k []byte, l LocalCache, ttl time.Duration) ([]byte, error) {
 	var ret []byte
 	err := c.db.Update(func(txn *badger.Txn) error {
-		item, err2 := txn.Get(k)
+		item, err := txn.Get(k)
 		// key either does not exist or was expired
-		if err2 == badger.ErrKeyNotFound {
+		if err == badger.ErrKeyNotFound {
 			// pull the new value
-			dat, err3 := l.CacheMiss(string(k))
-			if err3 != nil {
-				return err3
+			dat, err := l.CacheMiss(string(k))
+			if err != nil {
+				return err
 			}
 
 			// set the new value with TTL
-			err4 := txn.SetWithTTL(k, dat, c.TTL)
-			if err4 != nil {
-				return err4
+			err = txn.SetWithTTL(k, dat, ttl)
+			if err != nil {
+				return err
 			}
 			ret = dat
 			return nil
-		} else if err2 != nil {
-			return err2
+		} else if err != nil {
+			return err
 		}
-		val, err5 := item.Value()
-		if err5 != nil {
-			return err5
+		val, err := item.Value()
+		if err != nil {
+			return err
 		}
 		ret = val
 		return nil
@@ -85,8 +89,12 @@ func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 }
 
 func (c *BadgerCache) Set(k, v []byte) error {
+	return c.SetWithTTL(k, v, c.TTL)
+}
+
+func (c *BadgerCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
 	return c.db.Update(func(txn *badger.Txn) error {
-		err := txn.SetWithTTL(k, v, c.TTL)
+		err := txn.SetWithTTL(k, v, ttl)
 		if err != nil {
 			return err
 		}
@@ -95,9 +103,13 @@ func (c *BadgerCache) Set(k, v []byte) error {
 }
 
 func (c *BadgerCache) SetBatch(k, v [][]byte) error {
+	return c.SetBatchWithTTL(k, v, c.TTL)
+}
+
+func (c *BadgerCache) SetBatchWithTTL(k, v [][]byte, ttl time.Duration) error {
 	return c.db.Update(func(txn *badger.Txn) error {
 		for i, _ := range k {
-			err := txn.SetWithTTL(k[i], v[i], c.TTL)
+			err := txn.SetWithTTL(k[i], v[i], ttl)
 			if err != nil {
 				return err
 			}
