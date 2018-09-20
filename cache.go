@@ -48,6 +48,10 @@ func (c *BadgerCache) Close() error {
 }
 
 func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
+	return c.FetchWithTTL(k, l, c.TTL)
+}
+
+func (c *BadgerCache) FetchWithTTL(k []byte, l LocalCache, ttl time.Duration) ([]byte, error) {
 	var ret []byte
 	err := c.db.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get(k)
@@ -60,7 +64,7 @@ func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 			}
 
 			// set the new value with TTL
-			err = txn.SetWithTTL(k, dat, c.TTL)
+			err = txn.SetWithTTL(k, dat, ttl)
 			if err != nil {
 				return err
 			}
@@ -85,8 +89,12 @@ func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 }
 
 func (c *BadgerCache) Set(k, v []byte) error {
+	return c.SetWithTTL(k, v, c.TTL)
+}
+
+func (c *BadgerCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
 	return c.db.Update(func(txn *badger.Txn) error {
-		err := txn.SetWithTTL(k, v, c.TTL)
+		err := txn.SetWithTTL(k, v, ttl)
 		if err != nil {
 			return err
 		}
@@ -95,9 +103,13 @@ func (c *BadgerCache) Set(k, v []byte) error {
 }
 
 func (c *BadgerCache) SetBatch(k, v [][]byte) error {
+	return c.SetBatchWithTTL(k, v, c.TTL)
+}
+
+func (c *BadgerCache) SetBatchWithTTL(k, v [][]byte, ttl time.Duration) error {
 	return c.db.Update(func(txn *badger.Txn) error {
 		for i, _ := range k {
-			err := txn.SetWithTTL(k[i], v[i], c.TTL)
+			err := txn.SetWithTTL(k[i], v[i], ttl)
 			if err != nil {
 				return err
 			}
