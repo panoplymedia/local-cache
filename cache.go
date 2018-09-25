@@ -58,41 +58,20 @@ func (c *BadgerCache) FetchWithTTL(k []byte, l LocalCache, ttl time.Duration) ([
 		// key either does not exist or was expired
 		if err == badger.ErrKeyNotFound {
 			// pull the new value
-			dat, err := l.CacheMiss(string(k))
+			ret, err = l.CacheMiss(string(k))
 			if err != nil {
 				return err
 			}
 
 			// set the new value with TTL
-			if ttl > 0 {
-				err = txn.SetWithTTL(k, dat, ttl)
-				if err != nil {
-					return err
-				}
-			} else {
-				err = txn.Set(k, dat)
-				if err != nil {
-					return err
-				}
-			}
-			ret = dat
-			return nil
+			return setWithTTL(txn, k, ret, ttl)
 		} else if err != nil {
 			return err
 		}
-		val, err := item.Value()
-		if err != nil {
-			return err
-		}
-		ret = val
-		return nil
+		ret, err = item.Value()
+		return err
 	})
-
-	if err != nil {
-		return ret, err
-	}
-
-	return ret, nil
+	return ret, err
 }
 
 func (c *BadgerCache) Set(k, v []byte) error {
@@ -101,11 +80,7 @@ func (c *BadgerCache) Set(k, v []byte) error {
 
 func (c *BadgerCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
 	return c.db.Update(func(txn *badger.Txn) error {
-		err := txn.SetWithTTL(k, v, ttl)
-		if err != nil {
-			return err
-		}
-		return nil
+		return setWithTTL(txn, k, v, ttl)
 	})
 }
 
@@ -116,34 +91,36 @@ func (c *BadgerCache) SetBatch(k, v [][]byte) error {
 func (c *BadgerCache) SetBatchWithTTL(k, v [][]byte, ttl time.Duration) error {
 	return c.db.Update(func(txn *badger.Txn) error {
 		for i := range k {
-			if ttl > 0 {
-				err := txn.SetWithTTL(k[i], v[i], ttl)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := txn.Set(k[i], v[i])
-				if err != nil {
-					return err
-				}
-			}
+			return setWithTTL(txn, k[i], v[i], ttl)
 		}
 		return nil
 	})
 }
 
 func (c *BadgerCache) Incr(k []byte, v uint64) (uint64, error) {
-	m := c.db.GetMergeOperator(k, add, 200*time.Millisecond)
-	defer m.Stop()
-	err := m.Add(uint64ToBytes(v))
-	if err != nil {
-		return 0, err
-	}
-	b, err := m.Get()
-	if err != nil {
-		return 0, err
-	}
-	return bytesToUint64(b), nil
+	return c.IncrWithTTL(k, v, c.TTL)
+}
+
+func (c *BadgerCache) IncrWithTTL(k []byte, v uint64, ttl time.Duration) (uint64, error) {
+	var ret uint64
+	err := c.db.Update(func(txn *badger.Txn) error {
+		item, err := txn.Get(k)
+		if err == badger.ErrKeyNotFound {
+			ret = v
+		} else if err != nil {
+			return err
+		} else {
+			val, err := item.Value()
+			if err != nil {
+				return err
+			}
+			ret = bytesToUint64(val) + v
+		}
+
+		return setWithTTL(txn, k, uint64ToBytes(ret), ttl)
+	})
+
+	return ret, err
 }
 
 func (c *BadgerCache) Get(k []byte) ([]byte, error) {
@@ -157,4 +134,20 @@ func (c *BadgerCache) Get(k []byte) ([]byte, error) {
 		return err
 	})
 	return ret, err
+}
+
+func setWithTTL(txn *badger.Txn, k, v []byte, ttl time.Duration) error {
+	// set the new value with TTL
+	if ttl > 0 {
+		err := txn.SetWithTTL(k, v, ttl)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := txn.Set(k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
