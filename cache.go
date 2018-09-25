@@ -131,3 +131,30 @@ func (c *BadgerCache) SetBatchWithTTL(k, v [][]byte, ttl time.Duration) error {
 		return nil
 	})
 }
+
+func (c *BadgerCache) Incr(k []byte, v uint64) (uint64, error) {
+	m := c.db.GetMergeOperator(k, add, 200*time.Millisecond)
+	defer m.Stop()
+	err := m.Add(uint64ToBytes(v))
+	if err != nil {
+		return 0, err
+	}
+	b, err := m.Get()
+	if err != nil {
+		return 0, err
+	}
+	return bytesToUint64(b), nil
+}
+
+func (c *BadgerCache) Get(k []byte) ([]byte, error) {
+	ret := []byte{}
+	err := c.db.Update(func(txn *badger.Txn) error {
+		item, err := txn.Get(k)
+		if err != nil {
+			return err
+		}
+		ret, err = item.Value()
+		return err
+	})
+	return ret, err
+}
