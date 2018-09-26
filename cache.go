@@ -125,7 +125,7 @@ func (c *BadgerCache) IncrWithTTL(k []byte, v uint64, ttl time.Duration) (uint64
 
 func (c *BadgerCache) Get(k []byte) ([]byte, error) {
 	ret := []byte{}
-	err := c.db.Update(func(txn *badger.Txn) error {
+	err := c.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(k)
 		if err != nil {
 			return err
