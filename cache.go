@@ -73,7 +73,7 @@ func (c *BadgerCache) FetchWithTTL(k []byte, l LocalCache, ttl time.Duration) ([
 			return ret, err
 		}
 
-		err = c.db.Update(func(txn *badger.Txn) error {
+		go c.db.Update(func(txn *badger.Txn) error {
 			return setWithTTL(txn, k, ret, ttl)
 		})
 	}
