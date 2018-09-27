@@ -53,24 +53,30 @@ func (c *BadgerCache) Fetch(k []byte, l LocalCache) ([]byte, error) {
 
 func (c *BadgerCache) FetchWithTTL(k []byte, l LocalCache, ttl time.Duration) ([]byte, error) {
 	var ret []byte
-	err := c.db.Update(func(txn *badger.Txn) error {
+	cacheMiss := false
+	err := c.db.View(func(txn *badger.Txn) error {
 		item, err := txn.Get(k)
 		// key either does not exist or was expired
 		if err == badger.ErrKeyNotFound {
-			// pull the new value
-			ret, err = l.CacheMiss(string(k))
-			if err != nil {
-				return err
-			}
-
-			// set the new value with TTL
-			return setWithTTL(txn, k, ret, ttl)
+			cacheMiss = true
+			return nil
 		} else if err != nil {
 			return err
 		}
 		ret, err = item.Value()
 		return err
 	})
+	if cacheMiss {
+		// pull the new value
+		ret, err = l.CacheMiss(string(k))
+		if err != nil {
+			return ret, err
+		}
+
+		err = c.db.Update(func(txn *badger.Txn) error {
+			return setWithTTL(txn, k, ret, ttl)
+		})
+	}
 	return ret, err
 }
 
