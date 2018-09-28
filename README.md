@@ -9,7 +9,8 @@ package main
 import (
 	"fmt"
 	"time"
-	
+
+	"github.com/dgraph-io/badger"
 	"github.com/panoplymedia/local-cache"
 )
 
@@ -26,7 +27,7 @@ func (f foo) CacheMiss(key string) ([]byte, error){
 
 func main() {
 	// construct a new cache (in this case, we're setting a 1-min TTL)
-	c, err := cache.NewCache("foo", time.Minute)
+	c, err := cache.NewCache("foo", time.Minute, &badger.DefaultOptions)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -34,7 +35,7 @@ func main() {
 
 	// construct a new interface
 	f := foo{}
-	
+
 	// read the bytes
 	b, err := c.Fetch([]byte("key"), f)
 	if err != nil {
