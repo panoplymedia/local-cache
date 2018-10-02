@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -213,4 +214,36 @@ func TestGet(t *testing.T) {
 	b, err = c.Get(key)
 	assert.Nil(t, err)
 	assert.Equal(t, v, b)
+}
+
+func TestBackup(t *testing.T) {
+	c, err := NewCache("test-cache-backup", time.Second, nil, nil)
+	assert.Nil(t, err)
+	defer c.Close()
+
+	c.Set([]byte{1, 2, 3}, []byte{4, 5, 6})
+	var b bytes.Buffer
+	w := io.Writer(&b)
+	upto, err := c.Backup(w, uint64(time.Now().Add(-1*time.Minute).Unix()))
+	assert.Nil(t, err)
+	assert.True(t, upto > 0)
+}
+
+func TestLoad(t *testing.T) {
+	c, err := NewCache("test-cache-load", time.Second, nil, nil)
+	assert.Nil(t, err)
+	defer c.Close()
+
+	c.Set([]byte{1, 2, 3}, []byte{4, 5, 6})
+	var b bytes.Buffer
+	w := io.Writer(&b)
+	upto, err := c.Backup(w, uint64(time.Now().Add(-1*time.Minute).Unix()))
+	assert.Nil(t, err)
+	assert.True(t, upto > 0)
+
+	var readB bytes.Buffer
+	r := io.Reader(&readB)
+	err = c.Load(r)
+	assert.Nil(t, err)
+	assert.Equal(t, b.Bytes(), readB.Bytes())
 }

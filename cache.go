@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"io"
 	"time"
 
 	"github.com/dgraph-io/badger"
@@ -200,4 +201,25 @@ func setWithTTL(txn *badger.Txn, k, v []byte, ttl time.Duration) error {
 		}
 	}
 	return nil
+}
+
+// Backup dumps a protobuf-encoded list of all entries in the database into the
+// given writer, that are newer than the specified version. It returns a
+// timestamp indicating when the entries were dumped which can be passed into a
+// later invocation to generate an incremental dump, of entries that have been
+// added/modified since the last invocation of DB.Backup()
+//
+// This can be used to backup the data in a database at a given point in time.
+func (c *BadgerCache) Backup(w io.Writer, since uint64) (upto uint64, err error) {
+	return c.db.Backup(w, since)
+}
+
+// Load reads a protobuf-encoded list of all entries from a reader and writes
+// them to the database. This can be used to restore the database from a backup
+// made by calling DB.Backup().
+//
+// DB.Load() should be called on a database that is not running any other
+// concurrent transactions while it is running.
+func (c *BadgerCache) Load(r io.Reader) error {
+	return c.db.Load(r)
 }
