@@ -22,8 +22,20 @@ type BadgerCache struct {
 	ticker *time.Ticker // for GC loop
 }
 
+// GarbageCollectionOptions specifies settings for Badger garbage collection
+type GarbageCollectionOptions struct {
+	Frequency    time.Duration
+	DiscardRatio float64
+}
+
+// DefaultGCOptions are the default GarbageCollectionOptions
+var DefaultGCOptions = GarbageCollectionOptions{
+	Frequency:    time.Minute,
+	DiscardRatio: 0.5,
+}
+
 // NewCache creates a new BadgerCache
-func NewCache(n string, t time.Duration, opts *badger.Options) (*BadgerCache, error) {
+func NewCache(n string, t time.Duration, opts *badger.Options, gcOpts *GarbageCollectionOptions) (*BadgerCache, error) {
 	if t < time.Second && t > 0 {
 		return &BadgerCache{}, errors.New("TTL must be >= 1 second. Badger uses Unix timestamps for expiries which operate in second resolution")
 	}
@@ -37,12 +49,15 @@ func NewCache(n string, t time.Duration, opts *badger.Options) (*BadgerCache, er
 		return &BadgerCache{}, err
 	}
 
+	if gcOpts == nil {
+		gcOpts = &DefaultGCOptions
+	}
 	// start a GC loop
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(gcOpts.Frequency)
 	go func(t *time.Ticker, d *badger.DB) {
 		for range t.C {
 		again:
-			err := d.RunValueLogGC(0.7)
+			err := d.RunValueLogGC(gcOpts.DiscardRatio)
 			if err == nil {
 				goto again
 			}

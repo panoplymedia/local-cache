@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 
 func TestNewCache(t *testing.T) {
 	opts := badger.DefaultOptions
-	c, err := NewCache("test-cache-new", time.Second, &opts)
+	c, err := NewCache("test-cache-new", time.Second, &opts, &DefaultGCOptions)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -58,7 +58,7 @@ func TestNewCache(t *testing.T) {
 }
 
 func TestFetch(t *testing.T) {
-	c, err := NewCache("test-cache-fetch", time.Second, nil)
+	c, err := NewCache("test-cache-fetch", time.Second, nil, nil)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -86,7 +86,7 @@ func TestFetch(t *testing.T) {
 }
 
 func TestFetchWithTTL(t *testing.T) {
-	c, err := NewCache("test-cache-fetch-ttl", 2*time.Second, nil)
+	c, err := NewCache("test-cache-fetch-ttl", 2*time.Second, nil, nil)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -114,7 +114,7 @@ func TestFetchWithTTL(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	c, err := NewCache("test-cache-set", time.Second, nil)
+	c, err := NewCache("test-cache-set", time.Second, nil, nil)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -137,7 +137,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestSetWithTTL(t *testing.T) {
-	c, err := NewCache("test-cache-set-ttl", 2*time.Second, nil)
+	c, err := NewCache("test-cache-set-ttl", 2*time.Second, nil, nil)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -160,7 +160,7 @@ func TestSetWithTTL(t *testing.T) {
 }
 
 func TestIncr(t *testing.T) {
-	c, err := NewCache("test-cache-incr", time.Second, nil)
+	c, err := NewCache("test-cache-incr", time.Second, nil, nil)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -196,7 +196,7 @@ func TestIncr(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	c, err := NewCache("test-cache-get", time.Second, nil)
+	c, err := NewCache("test-cache-get", time.Second, nil, nil)
 	assert.Nil(t, err)
 	defer c.Close()
 
