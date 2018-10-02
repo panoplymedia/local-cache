@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"io"
 	"time"
 
 	"github.com/dgraph-io/badger"
@@ -22,8 +23,26 @@ type BadgerCache struct {
 	ticker *time.Ticker // for GC loop
 }
 
+// GarbageCollectionOptions specifies settings for Badger garbage collection
+type GarbageCollectionOptions struct {
+	Frequency    time.Duration
+	DiscardRatio float64
+}
+
+// BadgerStats displays stats about badger
+type BadgerStats struct {
+	LSMSize  int64
+	VLogSize int64
+}
+
+// DefaultGCOptions are the default GarbageCollectionOptions
+var DefaultGCOptions = GarbageCollectionOptions{
+	Frequency:    time.Minute,
+	DiscardRatio: 0.5,
+}
+
 // NewCache creates a new BadgerCache
-func NewCache(n string, t time.Duration, opts *badger.Options) (*BadgerCache, error) {
+func NewCache(n string, t time.Duration, opts *badger.Options, gcOpts *GarbageCollectionOptions) (*BadgerCache, error) {
 	if t < time.Second && t > 0 {
 		return &BadgerCache{}, errors.New("TTL must be >= 1 second. Badger uses Unix timestamps for expiries which operate in second resolution")
 	}
@@ -37,12 +56,15 @@ func NewCache(n string, t time.Duration, opts *badger.Options) (*BadgerCache, er
 		return &BadgerCache{}, err
 	}
 
+	if gcOpts == nil {
+		gcOpts = &DefaultGCOptions
+	}
 	// start a GC loop
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(gcOpts.Frequency)
 	go func(t *time.Ticker, d *badger.DB) {
 		for range t.C {
 		again:
-			err := d.RunValueLogGC(0.7)
+			err := d.RunValueLogGC(gcOpts.DiscardRatio)
 			if err == nil {
 				goto again
 			}
@@ -185,4 +207,34 @@ func setWithTTL(txn *badger.Txn, k, v []byte, ttl time.Duration) error {
 		}
 	}
 	return nil
+}
+
+// Backup dumps a protobuf-encoded list of all entries in the database into the
+// given writer, that are newer than the specified version. It returns a
+// timestamp indicating when the entries were dumped which can be passed into a
+// later invocation to generate an incremental dump, of entries that have been
+// added/modified since the last invocation of DB.Backup()
+//
+// This can be used to backup the data in a database at a given point in time.
+func (c *BadgerCache) Backup(w io.Writer, since uint64) (upto uint64, err error) {
+	return c.db.Backup(w, since)
+}
+
+// Load reads a protobuf-encoded list of all entries from a reader and writes
+// them to the database. This can be used to restore the database from a backup
+// made by calling DB.Backup().
+//
+// DB.Load() should be called on a database that is not running any other
+// concurrent transactions while it is running.
+func (c *BadgerCache) Load(r io.Reader) error {
+	return c.db.Load(r)
+}
+
+// Stats provides stats about the Badger database
+func (c *BadgerCache) Stats() BadgerStats {
+	lsm, vlog := c.db.Size()
+	return BadgerStats{
+		LSMSize:  lsm,
+		VLogSize: vlog,
+	}
 }
