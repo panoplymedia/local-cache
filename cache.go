@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type LocalCache interface {
 type BadgerCache struct {
 	db  *MemoryCache
 	TTL time.Duration
+	mu  sync.Mutex
 }
 
 // NewCache creates a new MemoryCache
@@ -23,7 +25,9 @@ func NewCache(t time.Duration) (*BadgerCache, error) {
 	if t < time.Second && t > 0 {
 		return &BadgerCache{}, errors.New("TTL must be >= 1 second. Badger uses Unix timestamps for expiries which operate in second resolution")
 	}
-	c := BadgerCache{newMemoryCache(), t}
+	var c BadgerCache
+	c.db = newMemoryCache()
+	c.TTL = t
 	return &c, nil
 }
 
@@ -89,6 +93,9 @@ func (c *BadgerCache) SetBatchWithTTL(k, v [][]byte, ttl time.Duration) error {
 // Incr increments the key by the specified uint64 value and returns the current value
 // due to transaction conflicts this is eventually consistent
 func (c *BadgerCache) Incr(k []byte, v uint64) (uint64, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	var newVal uint64
 
 	val, exists := c.db.Read(string(k))
