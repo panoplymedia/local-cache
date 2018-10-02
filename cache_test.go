@@ -247,3 +247,13 @@ func TestLoad(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, b.Bytes(), readB.Bytes())
 }
+
+func TestStats(t *testing.T) {
+	opts := badger.DefaultOptions
+	c, err := NewCache("test-cache-stats", time.Second, &opts, nil)
+	assert.Nil(t, err)
+	defer c.Close()
+
+	s := c.Stats()
+	assert.Equal(t, BadgerStats{0, 0}, s)
+}

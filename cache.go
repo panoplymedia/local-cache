@@ -29,6 +29,12 @@ type GarbageCollectionOptions struct {
 	DiscardRatio float64
 }
 
+// BadgerStats displays stats about badger
+type BadgerStats struct {
+	LSMSize  int64
+	VLogSize int64
+}
+
 // DefaultGCOptions are the default GarbageCollectionOptions
 var DefaultGCOptions = GarbageCollectionOptions{
 	Frequency:    time.Minute,
@@ -222,4 +228,13 @@ func (c *BadgerCache) Backup(w io.Writer, since uint64) (upto uint64, err error)
 // concurrent transactions while it is running.
 func (c *BadgerCache) Load(r io.Reader) error {
 	return c.db.Load(r)
+}
+
+// Stats provides stats about the Badger database
+func (c *BadgerCache) Stats() BadgerStats {
+	lsm, vlog := c.db.Size()
+	return BadgerStats{
+		LSMSize:  lsm,
+		VLogSize: vlog,
+	}
 }
