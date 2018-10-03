@@ -6,8 +6,9 @@ import (
 )
 
 type MemoryCache struct {
-	Dat map[string]cacheElement
-	mu  sync.Mutex
+	Dat      map[string]cacheElement
+	mu       sync.Mutex
+	KeyCount uint64
 }
 
 type cacheElement struct {
@@ -33,6 +34,7 @@ func (m MemoryCache) Read(key string) ([]byte, bool) {
 	} else if exists {
 		// evict key since it exists and it's expired
 		delete(m.Dat, key)
+		m.KeyCount--
 	}
 	return []byte{}, false
 }
@@ -54,4 +56,5 @@ func (m MemoryCache) Write(key string, val []byte, ttl time.Duration) {
 	}
 
 	m.Dat[key] = c
+	m.KeyCount++
 }
