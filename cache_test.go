@@ -211,3 +211,11 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, v, b)
 }
+
+func TestStats(t *testing.T) {
+	c, err := NewCache(time.Second)
+	assert.Nil(t, err)
+	defer c.Close()
+	s := c.Stats()
+	assert.Equal(t, BadgerStats{0, 0}, s)
+}
