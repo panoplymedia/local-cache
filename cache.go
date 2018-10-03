@@ -20,6 +20,12 @@ type BadgerCache struct {
 	mu  sync.Mutex
 }
 
+// BadgerStats displays stats about badger
+type BadgerStats struct {
+	LSMSize  int64
+	VLogSize int64
+}
+
 // NewCache creates a new MemoryCache
 func NewCache(t time.Duration) (*BadgerCache, error) {
 	if t < time.Second && t > 0 {
@@ -122,4 +128,12 @@ func (c *BadgerCache) Get(k []byte) ([]byte, error) {
 func (c *BadgerCache) setWithTTL(k, v []byte, ttl time.Duration) error {
 	c.db.Write(string(k), v, ttl)
 	return nil
+}
+
+// Stats provides stats about the Badger database
+func (c *BadgerCache) Stats() BadgerStats {
+	return BadgerStats{
+		LSMSize:  int64(c.db.KeyCount),
+		VLogSize: int64(c.db.KeyCount),
+	}
 }
