@@ -43,6 +43,7 @@ func (m MemoryCache) Read(key string) ([]byte, bool) {
 func (m MemoryCache) Write(key string, val []byte, ttl time.Duration) {
 	var e time.Time
 	if ttl == 0 {
+		// for a 0 TTL, store the max value of a time struct, so it essentially never expires
 		e = time.Unix(1<<63-1, 0)
 	} else {
 		e = time.Now().UTC().Add(ttl)
