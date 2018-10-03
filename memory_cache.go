@@ -7,7 +7,7 @@ import (
 
 type MemoryCache struct {
 	Dat      map[string]cacheElement
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	KeyCount uint64
 }
 
@@ -25,24 +25,22 @@ func newMemoryCache() *MemoryCache {
 }
 
 func (m MemoryCache) Read(key string) ([]byte, bool) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
+	m.mu.RLock()
 	el, exists := m.Dat[key]
+	m.mu.Unlock()
 	if exists && time.Now().UTC().Before(el.expiresAt) {
 		return el.dat, true
 	} else if exists {
 		// evict key since it exists and it's expired
+		m.mu.Lock()
 		delete(m.Dat, key)
 		m.KeyCount--
+		m.mu.Unlock()
 	}
 	return []byte{}, false
 }
 
 func (m MemoryCache) Write(key string, val []byte, ttl time.Duration) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	var e time.Time
 	if ttl == 0 {
 		e = time.Unix(1<<63-1, 0)
@@ -55,6 +53,8 @@ func (m MemoryCache) Write(key string, val []byte, ttl time.Duration) {
 		dat:       val,
 	}
 
+	m.mu.Lock()
 	m.Dat[key] = c
 	m.KeyCount++
+	m.mu.Unlock()
 }
