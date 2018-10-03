@@ -27,7 +27,7 @@ func newMemoryCache() *MemoryCache {
 func (m MemoryCache) Read(key string) ([]byte, bool) {
 	m.mu.RLock()
 	el, exists := m.Dat[key]
-	m.mu.Unlock()
+	m.mu.RUnlock()
 	if exists && time.Now().UTC().Before(el.expiresAt) {
 		return el.dat, true
 	} else if exists {
