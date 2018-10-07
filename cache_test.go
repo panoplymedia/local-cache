@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/dgraph-io/badger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,17 +47,15 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewCache(t *testing.T) {
-	opts := badger.DefaultOptions
-	c, err := NewCache("test-cache-new", time.Second, &opts, &DefaultGCOptions)
+	c, err := NewCache(time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
-	assert.Equal(t, "test-cache-new", c.name)
 	assert.Equal(t, time.Second, c.TTL)
 }
 
 func TestFetch(t *testing.T) {
-	c, err := NewCache("test-cache-fetch", time.Second, nil, nil)
+	c, err := NewCache(time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -87,7 +83,7 @@ func TestFetch(t *testing.T) {
 }
 
 func TestFetchWithTTL(t *testing.T) {
-	c, err := NewCache("test-cache-fetch-ttl", 2*time.Second, nil, nil)
+	c, err := NewCache(2 * time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -115,7 +111,7 @@ func TestFetchWithTTL(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	c, err := NewCache("test-cache-set", time.Second, nil, nil)
+	c, err := NewCache(time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -138,7 +134,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestSetWithTTL(t *testing.T) {
-	c, err := NewCache("test-cache-set-ttl", 2*time.Second, nil, nil)
+	c, err := NewCache(2 * time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -161,7 +157,7 @@ func TestSetWithTTL(t *testing.T) {
 }
 
 func TestIncr(t *testing.T) {
-	c, err := NewCache("test-cache-incr", time.Second, nil, nil)
+	c, err := NewCache(time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -197,7 +193,7 @@ func TestIncr(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	c, err := NewCache("test-cache-get", time.Second, nil, nil)
+	c, err := NewCache(time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
 
@@ -216,44 +212,10 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, v, b)
 }
 
-func TestBackup(t *testing.T) {
-	c, err := NewCache("test-cache-backup", time.Second, nil, nil)
-	assert.Nil(t, err)
-	defer c.Close()
-
-	c.Set([]byte{1, 2, 3}, []byte{4, 5, 6})
-	var b bytes.Buffer
-	w := io.Writer(&b)
-	upto, err := c.Backup(w, uint64(time.Now().Add(-1*time.Minute).Unix()))
-	assert.Nil(t, err)
-	assert.True(t, upto > 0)
-}
-
-func TestLoad(t *testing.T) {
-	c, err := NewCache("test-cache-load", time.Second, nil, nil)
-	assert.Nil(t, err)
-	defer c.Close()
-
-	c.Set([]byte{1, 2, 3}, []byte{4, 5, 6})
-	var b bytes.Buffer
-	w := io.Writer(&b)
-	upto, err := c.Backup(w, uint64(time.Now().Add(-1*time.Minute).Unix()))
-	assert.Nil(t, err)
-	assert.True(t, upto > 0)
-
-	var readB bytes.Buffer
-	r := io.Reader(&readB)
-	err = c.Load(r)
-	assert.Nil(t, err)
-	assert.Equal(t, b.Bytes(), readB.Bytes())
-}
-
 func TestStats(t *testing.T) {
-	opts := badger.DefaultOptions
-	c, err := NewCache("test-cache-stats", time.Second, &opts, nil)
+	c, err := NewCache(time.Second)
 	assert.Nil(t, err)
 	defer c.Close()
-
 	s := c.Stats()
 	assert.Equal(t, BadgerStats{0, 0}, s)
 }
