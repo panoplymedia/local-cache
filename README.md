@@ -1,48 +1,36 @@
 # Local Cache
 
-A local cache based on Badger.
+A local cache to be used with a caching layer that implements the `Cache` and `Conn` interfaces from [panoplymedia/cache](https://github.com/panoplymedia/cache). This enables a consistent local cache API with the ability to use different cache layers.
 
-### Sample Usage
+## Sample Usage
+
 ```go
-package main
-
-import (
-	"fmt"
-	"time"
-
-	"github.com/dgraph-io/badger"
-	"github.com/panoplymedia/local-cache"
-)
-
-// implement the interface
-// the interface defines what we do when we have a cache miss
-type foo struct {}
-
-// the CacheMiss() function must return a byte array. This is the value that gets cached
-// In a typical use-case, this would be a call to a db or some other external call you want to cache
-func (f foo) CacheMiss(key string) ([]byte, error){
-	result := someLocalDB.query("select title from table where id=?", key)
-	return []byte(result), nil
+type MyData struct {
+  Value int
 }
 
-func main() {
-	// construct a new cache (in this case, we're setting a 1-min TTL)
-	c, err := cache.NewCache("foo", time.Minute, &badger.DefaultOptions, &DefaultGCOptions)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer c.Close()
-
-	// construct a new interface
-	f := foo{}
-
-	// read the bytes
-	b, err := c.Fetch([]byte("key"), f)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// display the result
-	fmt.Println(string(b))
+// called when Fetch doesnt find data in the cache
+func (m MyData) CacheMiss(key string) ([]byte, error) {
+  return []byte("hydrated"), nil
 }
+
+// where `conn` is a cache.Conn
+c := localcache.New(conn)
+err := c.Set([]byte("key"), []byte("value"))
+if err != nil {
+  fmt.Println(err)
+}
+b, err := c.Get([]byte("key"))
+if err != nil {
+  fmt.Println(err)
+}
+
+d := MyData{}
+// returns data from the cache or calls `CacheMiss` for `MyData`
+b, err = c.Fetch([]byte("miss"), d)
 ```
+
+## Compatible Cache Backends
+
+- [MemoryStore](https://github.com/panoplymedia/local-cache-memorystore)
+- [BadgerDB](https://github.com/panoplymedia/local-cache-badger)
