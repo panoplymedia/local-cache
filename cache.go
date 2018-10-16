@@ -18,13 +18,18 @@ type LocalCache struct {
 }
 
 // New creates a new LocalCache
-func New(c cache.Conn) LocalCache {
-	return LocalCache{Conn: c}
+func New(c cache.Conn) *LocalCache {
+	return &LocalCache{Conn: c}
+}
+
+// Close closes connection to local cache backend
+func (lc *LocalCache) Close() error {
+	return lc.Conn.Close()
 }
 
 // Fetch gets data from the cache for the specified key
 // If the data is missing, the result from BackfillCache.CacheMiss is returned and stored to the key
-func (lc LocalCache) Fetch(k []byte, b BackfillCache) ([]byte, error) {
+func (lc *LocalCache) Fetch(k []byte, b BackfillCache) ([]byte, error) {
 	ret, err := lc.Conn.Read(k)
 	if err != nil {
 		ret, err = b.CacheMiss(string(k))
@@ -38,7 +43,7 @@ func (lc LocalCache) Fetch(k []byte, b BackfillCache) ([]byte, error) {
 }
 
 // FetchWithTTL is the same as Fetch, but with an explicit TTL
-func (lc LocalCache) FetchWithTTL(k []byte, b BackfillCache, ttl time.Duration) ([]byte, error) {
+func (lc *LocalCache) FetchWithTTL(k []byte, b BackfillCache, ttl time.Duration) ([]byte, error) {
 	ret, err := lc.Conn.Read(k)
 	if err != nil {
 		ret, err = b.CacheMiss(string(k))
@@ -52,21 +57,21 @@ func (lc LocalCache) FetchWithTTL(k []byte, b BackfillCache, ttl time.Duration) 
 }
 
 // Set writes data to the cache
-func (lc LocalCache) Set(k, v []byte) error {
+func (lc *LocalCache) Set(k, v []byte) error {
 	return lc.Conn.Write(k, v)
 }
 
 // SetWithTTL writes data to the cache with an explicit TTL
-func (lc LocalCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
+func (lc *LocalCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
 	return lc.Conn.WriteTTL(k, v, ttl)
 }
 
 // Get retrieves data for a key from the cache
-func (lc LocalCache) Get(k []byte) ([]byte, error) {
+func (lc *LocalCache) Get(k []byte) ([]byte, error) {
 	return lc.Conn.Read(k)
 }
 
 // Stats provides stats about the cache connection
-func (lc LocalCache) Stats() (map[string]interface{}, error) {
+func (lc *LocalCache) Stats() (map[string]interface{}, error) {
 	return lc.Conn.Stats()
 }

@@ -42,15 +42,15 @@ func createConn() *memorystorecache.Conn {
 
 func TestNew(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
-	assert.Equal(t, LocalCache{Conn: c}, lc)
+	defer lc.Close()
+	assert.Equal(t, &LocalCache{Conn: c}, lc)
 }
 
 func TestSet(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
+	defer lc.Close()
 
 	key := []byte("set")
 
@@ -72,8 +72,8 @@ func TestSet(t *testing.T) {
 
 func TestSetWithTTL(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
+	defer lc.Close()
 
 	key := []byte("set")
 
@@ -95,8 +95,8 @@ func TestSetWithTTL(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
+	defer lc.Close()
 
 	// creates initial key
 	key := []byte("my-key")
@@ -115,8 +115,8 @@ func TestGet(t *testing.T) {
 
 func TestFetch(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
+	defer lc.Close()
 
 	key := []byte("fetch")
 
@@ -143,8 +143,8 @@ func TestFetch(t *testing.T) {
 
 func TestFetchWithTTL(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
+	defer lc.Close()
 
 	key := []byte("fetch")
 
@@ -171,8 +171,8 @@ func TestFetchWithTTL(t *testing.T) {
 
 func TestStats(t *testing.T) {
 	c := createConn()
-	defer c.Close()
 	lc := New(c)
+	defer lc.Close()
 
 	// write a key
 	key := []byte("my-key")
