@@ -29,3 +29,8 @@ d := MyData{}
 // returns data from the cache or calls `CacheMiss` for `MyData`
 b, err = c.Fetch([]byte("miss"), d)
 ```
+
+## Compatible Cache Backends
+
+- [MemoryStore](https://github.com/panoplymedia/local-cache-memorystore)
+- [BadgerDB](https://github.com/panoplymedia/local-cache-badger)
