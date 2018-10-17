@@ -34,3 +34,4 @@ b, err = c.Fetch([]byte("miss"), d)
 
 - [MemoryStore](https://github.com/panoplymedia/local-cache-memorystore)
 - [BadgerDB](https://github.com/panoplymedia/local-cache-badger)
+- [Redis](https://github.com/panoplymedia/local-cache-redis)
