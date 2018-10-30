@@ -35,3 +35,9 @@ b, err = c.Fetch([]byte("miss"), d)
 - [MemoryStore](https://github.com/panoplymedia/omni-cache-memorystore)
 - [BadgerDB](https://github.com/panoplymedia/omni-cache-badger)
 - [Redis](https://github.com/panoplymedia/omni-cache-redis)
+
+## Create New Persistence Layer
+
+- Name repository `omni-cache-<persistence-layer>`
+- Implement `Cache` and `Conn` interfaces from [panoplymedia/cache](https://github.com/panoplymedia/cache)
+- Add link to this README
