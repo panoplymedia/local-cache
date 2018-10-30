@@ -1,6 +1,6 @@
-# Local Cache
+# OmniCache
 
-A local cache to be used with a caching layer that implements the `Cache` and `Conn` interfaces from [panoplymedia/cache](https://github.com/panoplymedia/cache). This enables a consistent local cache API with the ability to use different cache layers.
+OmniCache is a flexible cache API with pluggable persistence layers (in-memory, Redis, etc). Any persistence layer that implements the `Cache` and `Conn` interfaces from [panoplymedia/cache](https://github.com/panoplymedia/cache) can be used with this package.
 
 ## Sample Usage
 
@@ -30,8 +30,8 @@ d := MyData{}
 b, err = c.Fetch([]byte("miss"), d)
 ```
 
-## Compatible Cache Backends
+## Compatible Persistence Layers
 
-- [MemoryStore](https://github.com/panoplymedia/local-cache-memorystore)
-- [BadgerDB](https://github.com/panoplymedia/local-cache-badger)
-- [Redis](https://github.com/panoplymedia/local-cache-redis)
+- [MemoryStore](https://github.com/panoplymedia/omni-cache-memorystore)
+- [BadgerDB](https://github.com/panoplymedia/omni-cache-badger)
+- [Redis](https://github.com/panoplymedia/omni-cache-redis)

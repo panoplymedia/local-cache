@@ -1,4 +1,4 @@
-package localcache
+package omnicache
 
 import (
 	"time"
@@ -12,66 +12,66 @@ type BackfillCache interface {
 	CacheMiss(key string) ([]byte, error)
 }
 
-// LocalCache contains connection to a cache layer
-type LocalCache struct {
+// OmniCache contains connection to a cache layer
+type OmniCache struct {
 	Conn cache.Conn
 }
 
-// New creates a new LocalCache
-func New(c cache.Conn) *LocalCache {
-	return &LocalCache{Conn: c}
+// New creates a new OmniCache
+func New(c cache.Conn) *OmniCache {
+	return &OmniCache{Conn: c}
 }
 
 // Close closes connection to local cache backend
-func (lc *LocalCache) Close() error {
-	return lc.Conn.Close()
+func (oc *OmniCache) Close() error {
+	return oc.Conn.Close()
 }
 
 // Fetch gets data from the cache for the specified key
 // If the data is missing, the result from BackfillCache.CacheMiss is returned and stored to the key
-func (lc *LocalCache) Fetch(k []byte, b BackfillCache) ([]byte, error) {
-	ret, err := lc.Conn.Read(k)
+func (oc *OmniCache) Fetch(k []byte, b BackfillCache) ([]byte, error) {
+	ret, err := oc.Conn.Read(k)
 	if err != nil {
 		ret, err = b.CacheMiss(string(k))
 		if err != nil {
 			return ret, err
 		}
-		err = lc.Conn.Write(k, ret)
+		err = oc.Conn.Write(k, ret)
 	}
 
 	return ret, err
 }
 
 // FetchWithTTL is the same as Fetch, but with an explicit TTL
-func (lc *LocalCache) FetchWithTTL(k []byte, b BackfillCache, ttl time.Duration) ([]byte, error) {
-	ret, err := lc.Conn.Read(k)
+func (oc *OmniCache) FetchWithTTL(k []byte, b BackfillCache, ttl time.Duration) ([]byte, error) {
+	ret, err := oc.Conn.Read(k)
 	if err != nil {
 		ret, err = b.CacheMiss(string(k))
 		if err != nil {
 			return ret, err
 		}
-		err = lc.Conn.WriteTTL(k, ret, ttl)
+		err = oc.Conn.WriteTTL(k, ret, ttl)
 	}
 
 	return ret, err
 }
 
 // Set writes data to the cache
-func (lc *LocalCache) Set(k, v []byte) error {
-	return lc.Conn.Write(k, v)
+func (oc *OmniCache) Set(k, v []byte) error {
+	return oc.Conn.Write(k, v)
 }
 
 // SetWithTTL writes data to the cache with an explicit TTL
-func (lc *LocalCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
-	return lc.Conn.WriteTTL(k, v, ttl)
+func (oc *OmniCache) SetWithTTL(k, v []byte, ttl time.Duration) error {
+	return oc.Conn.WriteTTL(k, v, ttl)
 }
 
 // Get retrieves data for a key from the cache
-func (lc *LocalCache) Get(k []byte) ([]byte, error) {
-	return lc.Conn.Read(k)
+func (oc *OmniCache) Get(k []byte) ([]byte, error) {
+	return oc.Conn.Read(k)
 }
 
 // Stats provides stats about the cache connection
-func (lc *LocalCache) Stats() (map[string]interface{}, error) {
-	return lc.Conn.Stats()
+func (oc *OmniCache) Stats() (map[string]interface{}, error) {
+	return oc.Conn.Stats()
 }
